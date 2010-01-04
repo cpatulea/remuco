@@ -34,7 +34,8 @@ ERROR = logging.ERROR
 class _config:
     """Configuration container"""
     
-    FMT = logging.Formatter("%(asctime)s [%(levelname)7s] [%(filename)11s " +
+    FMT = logging.Formatter(#"%(asctime)s "
+                            "[%(levelname)7s] [%(filename)11s " +
                             "%(lineno)4d] %(message)s")
     
     handler_default = logging.StreamHandler()

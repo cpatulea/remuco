@@ -53,9 +53,9 @@ def _start_pa(pa):
     log.info("start player adapter")
     try:
         pa.start()
-    except StandardError, e:
-        log.error("failed to start player adapter (%s)" % e)
-        return False
+    #except StandardError, e:
+    #    log.error("failed to start player adapter (%s)" % e)
+    #    return False
     except Exception, e:
         log.exception("** BUG ** %s", e)
         return False

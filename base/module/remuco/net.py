@@ -482,6 +482,8 @@ class BluetoothServer(_Server):
         
         try:
             sock.bind(("", self._config.bluetooth_channel or bluetooth.PORT_ANY))
+        except IOError:
+            raise
         except Exception, e:
             # convert error to regular IO error
             ioe = IOError()
