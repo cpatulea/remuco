@@ -26,8 +26,10 @@ import os
 import os.path
 import sys
 
-from xdg.BaseDirectory import xdg_config_home as xdg_config
-from xdg.BaseDirectory import xdg_cache_home as xdg_cache
+# from xdg.BaseDirectory import xdg_config_home as xdg_config
+# from xdg.BaseDirectory import xdg_cache_home as xdg_cache
+xdg_config = ""
+xdg_cache = ""
 
 from remuco import log
 from remuco import defs
