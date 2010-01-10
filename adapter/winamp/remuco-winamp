@@ -1,0 +1,138 @@
+#!/usr/bin/python
+
+# =============================================================================
+#
+#    Remuco - A remote control system for media players.
+#    Copyright (C) 2006-2009 by the Remuco team, see AUTHORS.
+#
+#    This file is part of Remuco.
+#
+#    Remuco is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    Remuco is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with Remuco.  If not, see <http://www.gnu.org/licenses/>.
+#
+# =============================================================================
+
+"""Winamp adapter for Remuco, implemented as an executable script."""
+
+import remuco
+from remuco import log
+import winamp
+
+class WinampAdapter(remuco.PlayerAdapter):
+    def __init__(self):
+        super(WinampAdapter, self).__init__(
+            "Winamp",
+            playback_known=True,
+            volume_known=True,
+            poll=10,
+        )
+
+    def start(self):
+        super(WinampAdapter, self).start()
+        self.winamp = winamp.Winamp()
+
+    def stop(self):
+        self.winamp.detach()
+        super(WinampAdapter, self).stop()
+
+    def poll(self):
+        w2r_status = {
+            winamp.PLAYBACK_NOT_PLAYING: remuco.PLAYBACK_STOP,
+            winamp.PLAYBACK_PLAYING: remuco.PLAYBACK_PLAY,
+            winamp.PLAYBACK_PAUSE: remuco.PLAYBACK_PAUSE
+        }
+        self.update_playback(w2r_status[self.winamp.getPlaybackStatus()])
+        self.update_repeat(self.winamp.getRepeat())
+        self.update_shuffle(self.winamp.getShuffle())
+        
+        id = self.winamp.getPlaylistPosition()
+        filename = self.winamp.getPlaylistFile(id)
+        info = {
+            remuco.INFO_ARTIST: self.winamp.getExtendedFileInfo(filename, "artist"),
+            remuco.INFO_ALBUM: self.winamp.getExtendedFileInfo(filename, "album"),
+            remuco.INFO_TITLE: self.winamp.getExtendedFileInfo(filename, "title"),
+            remuco.INFO_GENRE: self.winamp.getExtendedFileInfo(filename, "genre"),
+            remuco.INFO_YEAR: self.winamp.getExtendedFileInfo(filename, "year"),
+            remuco.INFO_BITRATE: self.winamp.getCurrentPlayingInfo(winamp.INFO_BITRATE),
+            remuco.INFO_RATING: self.winamp.getRating(),
+            remuco.INFO_LENGTH: self.winamp.getPlayingTrackLength(),
+        }
+        self.update_item(id, info, None)
+        
+        self.update_position(id)
+        
+        self.update_progress(self.winamp.getPlayingTrackPosition() / 1000,
+            self.winamp.getPlayingTrackLength())
+
+        self.update_volume(self.winamp.getVolume() * 100 / 255)
+
+    def ctrl_toggle_playing(self):
+        status = self.winamp.getPlaybackStatus()
+        if status == winamp.PLAYBACK_NOT_PLAYING:
+            self.winamp.play()
+        elif status in (winamp.PLAYBACK_PLAYING, winamp.PLAYBACK_PAUSE):
+            self.winamp.pause()
+        else:
+            raise ValueError("Unexpected Winamp status value %d" % status)
+        self.poll()
+
+    def ctrl_toggle_repeat(self):
+        self.winamp.setRepeat(not self.winamp.getRepeat())
+        self.poll()
+
+    def ctrl_toggle_shuffle(self):
+        self.winamp.setShuffle(not self.winamp.getShuffle())
+        self.poll()
+
+    def ctrl_toggle_fullscreen(self):
+        self.winamp.toggleFullscreen()
+        self.poll()
+
+    def ctrl_next(self):
+        self.winamp.next()
+        self.poll()
+
+    def ctrl_previous(self):
+        self.winamp.previous()
+        self.poll()
+
+    def ctrl_seek(self, direction):
+        self.winamp.seek(self.winamp.getPlayingTrackPosition() + 5000 * direction)
+        self.poll()
+
+    def ctrl_rate(self, rating):
+        self.winamp.setRating(rating)
+        self.poll()
+
+    def ctrl_volume(self, direction):
+        scale = 5 * 255 / 100
+        self.winamp.setVolume(self.winamp.getVolume() + scale * direction)
+        print "after ctrl_volume: volume=", int(self.winamp.getVolume() * 100 / 255)
+        self.poll()
+
+    def request_playlist(self, reply):
+        titles = self.winamp.getPlaylistTitles()
+        reply.ids = range(len(titles))
+        reply.names = titles
+        reply.send()
+
+    
+# =============================================================================
+# main (example startup using remuco.Manager)
+# =============================================================================
+
+if __name__ == '__main__':
+    
+    pa = WinampAdapter() # create the player adapter
+    mg = remuco.Manager(pa)# # pass it to a manager
+    mg.run() # run the manager (blocks until interrupt signal)
