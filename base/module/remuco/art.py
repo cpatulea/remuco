@@ -30,7 +30,7 @@ import urlparse
 
 from remuco import log
 
-TN_DIR = os.path.join(os.getenv("HOME"), ".thumbnails")
+TN_DIR = os.path.join(os.getenv("USERPROFILE"), ".thumbnails")
 TN_SUBDIRS = ("large", "normal")
 
 RE_IND = r'(?:front|album|cover|folder|art)' # words indicating art files
