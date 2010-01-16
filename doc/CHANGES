@@ -12,6 +12,8 @@ Player adapters
   * Amarok, VLC: New playlist action for jumping to a specific position (must
     be enabled explicitly in the adapter configuration because it fails in
     dynamic playlists) 
+  * Windows server support (experimental)
+  * Winamp: Added Winamp adapter.
 
 Release 0.9.2
 =============
