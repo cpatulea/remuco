@@ -39,12 +39,18 @@ IA_JUMP = remuco.ItemAction("Jump to")
 IA_REMOVE = remuco.ItemAction("Remove", multiple=True)
 PLAYLIST_ACTIONS = (IA_JUMP, IA_REMOVE)
 
+FA_APPEND = remuco.ItemAction("Append")
+FA_PLAY = remuco.ItemAction("Play")
+FILE_ACTIONS = (FA_APPEND, FA_PLAY)
+
 class WinampAdapter(remuco.PlayerAdapter):
     def __init__(self):
         super(WinampAdapter, self).__init__(
             "Winamp",
             playback_known=True,
             volume_known=True,
+            file_actions=FILE_ACTIONS,
+            mime_types=["audio"]
         )
 
     def start(self):
@@ -162,6 +168,17 @@ class WinampAdapter(remuco.PlayerAdapter):
             self.poll()
         else:
             raise ValueError("Unknown action %r" % action_id)
+
+    def action_files(self, action_id, files, uris):
+        if action_id == FA_APPEND.id:
+            self.winamp.enqueueFile(files[0])
+        elif action_id == FA_PLAY.id:
+            self.winamp.clearPlaylist()
+            self.winamp.enqueueFile(files[0])
+            self.winamp.setPlaylistPosition(0)
+            self.winamp.play()
+        else:
+            raise ValueError("Unknown file action %r" % action_id)
 
 # =============================================================================
 # main (example startup using remuco.Manager)
