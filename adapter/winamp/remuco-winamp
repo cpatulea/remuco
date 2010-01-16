@@ -26,8 +26,8 @@
 
 TODO:
  - ctrl_*() should only re-poll the values that have changed
- - run as a Winamp purpose and get asynchronous notification of player state
-   changes (IPC_CB_MISC)
+ - run as a Winamp in-process plugin and get asynchronous notification of player
+   state changes (IPC_CB_MISC)
 """
 
 import os.path
@@ -45,7 +45,6 @@ class WinampAdapter(remuco.PlayerAdapter):
             "Winamp",
             playback_known=True,
             volume_known=True,
-            poll=10,
         )
 
     def start(self):
