@@ -27,6 +27,8 @@ import mimetypes
 import sys
 
 from win32com.shell import shell, shellcon
+import pywintypes
+import winerror
 
 from remuco import log
 
@@ -47,9 +49,20 @@ class _DirMap(dict):
         
         dict.__init__(self)
 
-        self["audio"] = shell.SHGetFolderPath(0, shellcon.CSIDL_MYMUSIC, 0, 0)
-        self["video"] = shell.SHGetFolderPath(0, shellcon.CSIDL_MYVIDEO, 0, 0)
-        self["image"] = shell.SHGetFolderPath(0, shellcon.CSIDL_MYPICTURES, 0, 0)
+        mime_to_csidl = {
+            "audio": shellcon.CSIDL_MYMUSIC,
+            "video": shellcon.CSIDL_MYVIDEO,
+            "image": shellcon.CSIDL_MYPICTURES
+        }
+        
+        for mime, csidl in mime_to_csidl.iteritems():
+            try:
+                path = shell.SHGetFolderPath(0, csidl, 0, 0)
+            except pywintypes.com_error, e:
+                if e[0] != winerror.HRESULT_FROM_WIN32(winerror.ERROR_FILE_NOT_FOUND):
+                    raise
+            else:
+                self[mime] = path
             
     
 class FileSystemLibrary(object):
