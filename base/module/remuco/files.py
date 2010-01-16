@@ -26,7 +26,7 @@ import re
 import mimetypes
 import sys
 
-# from xdg.BaseDirectory import xdg_config_home as xdg_config
+from win32com.shell import shell, shellcon
 
 from remuco import log
 
@@ -41,58 +41,16 @@ class _AllMimeTypes(list):
         return True
 
 class _DirMap(dict):
-    """Maps aliases and mime types to directories. """
+    """Maps mime types to directories. """
     
-    __DEFAULT = {
-        "XDG_DESKTOP_DIR": "$HOME/Desktop",
-        "XDG_DOWNLOAD_DIR": "$HOME/Download",
-        "XDG_TEMPLATES_DIR": "$HOME/Templates",
-        "XDG_PUBLICSHARE_DIR": "$HOME/Public",
-        "XDG_DOCUMENTS_DIR": "$HOME/Documents",
-        "XDG_MUSIC_DIR": "$HOME/Music",
-        "XDG_PICTURES_DIR": "$HOME/Photos",
-        "XDG_VIDEOS_DIR": "$HOME/Videos" }
-    
-    __MIME_TO_ALIAS_MAP = {
-        "audio": "XDG_MUSIC_DIR",
-        "video": "XDG_VIDEOS_DIR",
-        "image": "XDG_PICTURES_DIR" }
-
     def __init__(self):
         
         dict.__init__(self)
 
-        self.update(_DirMap.__DEFAULT)
-        
-        udc = self.__load_xdg_user_dirs_config()
-        
-        self.update(udc)
-        
-        for mime_type in _DirMap.__MIME_TO_ALIAS_MAP:
-            alias = _DirMap.__MIME_TO_ALIAS_MAP[mime_type]
-            self[mime_type] = self[alias]
+        self["audio"] = shell.SHGetFolderPath(0, shellcon.CSIDL_MYMUSIC, 0, 0)
+        self["video"] = shell.SHGetFolderPath(0, shellcon.CSIDL_MYVIDEO, 0, 0)
+        self["image"] = shell.SHGetFolderPath(0, shellcon.CSIDL_MYPICTURES, 0, 0)
             
-    def __load_xdg_user_dirs_config(self):
-    
-        filename = os.path.join(xdg_config, "user-dirs.dirs")
-    
-        if not os.path.isfile(filename):
-            return {}
-        
-        try:
-            udc_file = open(filename, "r")
-            udc_content = udc_file.read()
-        except IOError, e:
-            log.warning("failed to load user dirs config (%s)" % e)
-            return {}
-    
-        pattern = re.compile("\\n(XDG_[_A-Z]+)=\"([^\\n]+)\"")
-        tuples = re.findall(pattern, udc_content)
-        
-        config = {}
-        for kv in tuples: config[kv[0]] = kv[1]
-        
-        return config
     
 class FileSystemLibrary(object):
     
@@ -115,7 +73,7 @@ class FileSystemLibrary(object):
         root_dirs = self.__trim_dirs(root_dirs)
         
         if not root_dirs:
-            root_dirs = (os.getenv("HOME", os.path.sep), )
+            root_dirs = (os.getenv("USERPROFILE", os.path.sep), )
         
         # map root dirs to names
         self.__roots = {}

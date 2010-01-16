@@ -80,25 +80,13 @@ from remuco.manager import Manager
 # exports
 #==============================================================================
 
-__all__ = ["PlayerAdapter", "ListReply",
+__all__ = ("PlayerAdapter", "ListReply",
            "ItemAction", "ListAction", "Manager", "Config",
            
            "INFO_ALBUM", "INFO_ARTIST", "INFO_GENRE", "INFO_LENGTH",
            "INFO_RATING", "INFO_TAGS", "INFO_TITLE", "INFO_YEAR",
            
            "PLAYBACK_PAUSE", "PLAYBACK_PLAY", "PLAYBACK_STOP",
-           ]
+           )
 
 __version__ = REMUCO_VERSION
-
-#
-# platform-dependent
-#
-try:
-    import dbus
-except ImportError:
-    # MPRISAdapter requires dbus
-    pass
-else:
-    from remuco.mpris import MPRISAdapter
-    __all__.append("MPRISAdapter")
