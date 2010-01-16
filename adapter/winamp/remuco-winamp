@@ -125,7 +125,6 @@ class WinampAdapter(remuco.PlayerAdapter):
         # clamp to 0-255
         new_volume = min(max(new_volume, 0), 255)
         self.winamp.setVolume(new_volume)
-        print "after ctrl_volume: volume=", int(self.winamp.getVolume() * 100 / 255)
         self.poll()
 
     def request_playlist(self, reply):
