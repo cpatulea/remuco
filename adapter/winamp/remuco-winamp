@@ -24,6 +24,7 @@
 
 """Winamp adapter for Remuco, implemented as an executable script."""
 
+import os.path
 import remuco
 from remuco import log
 import winamp
@@ -67,6 +68,10 @@ class WinampAdapter(remuco.PlayerAdapter):
             remuco.INFO_RATING: self.winamp.getRating(),
             remuco.INFO_LENGTH: self.winamp.getPlayingTrackLength(),
         }
+        if not info[remuco.INFO_TITLE]:
+          info[remuco.INFO_TITLE] = os.path.basename(
+            self.winamp.getPlaylistFile(id)
+          )
         self.update_item(id, info, None)
         
         self.update_position(id)
@@ -116,7 +121,10 @@ class WinampAdapter(remuco.PlayerAdapter):
 
     def ctrl_volume(self, direction):
         scale = 5 * 255 / 100
-        self.winamp.setVolume(self.winamp.getVolume() + scale * direction)
+        new_volume = self.winamp.getVolume() + scale * direction
+        # clamp to 0-255
+        new_volume = min(max(new_volume, 0), 255)
+        self.winamp.setVolume(new_volume)
         print "after ctrl_volume: volume=", int(self.winamp.getVolume() * 100 / 255)
         self.poll()
 
