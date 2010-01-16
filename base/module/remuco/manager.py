@@ -44,6 +44,7 @@ def _init_main_loop():
         _ml = gobject.MainLoop()
         signal.signal(signal.SIGINT, _sighandler)
         signal.signal(signal.SIGTERM, _sighandler)
+        gobject.ctrlc_add()
     
     return _ml
 
