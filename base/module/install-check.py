@@ -2,11 +2,9 @@ import sys
 
 try:
     import gobject
-    import xdg.BaseDirectory
     import Image
     import logging
     import bluetooth
-    import dbus
 except ImportError, e:
     print("")
     print("+-----------------------------------------------------------------+")
