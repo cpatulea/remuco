@@ -535,10 +535,12 @@ class Winamp(object):
 		self.__freeDataInWinamp(filenameAddr)
 		self.__freeDataInWinamp(xfiAddr)
 		
-		if rc == 1:
+		if rc == 0: # data unavailable (eg. file not found)
+			return None
+		elif rc == 1:
 			return ret.value
 		else:
-			raise WinampError("Input plugin does not support getExtendedFileInfo")
+			raise WinampError("getExtendedFileInfo returned %d" % rc)
 
 	def getCurrentPlayingInfo(self, mode):
 		"""Gets info about the current playing song (INFO_*)."""
