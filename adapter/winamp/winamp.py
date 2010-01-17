@@ -564,10 +564,14 @@ class Winamp(object):
 
 	def getRating(self):
 		"""Gets the rating (0 no rating, 1-5 stars) for the current item."""
-		self.__sendUserMessage(0, IPC_GETRATING)
+		return self.__sendUserMessage(0, IPC_GETRATING)
 
 	def setRating(self, rating):
-		"""Sets the rating (0 no rating, 1-5 stars) for the current item."""
+		"""Sets the rating (0 no rating, 1-5 stars) for the current item.
+		
+		Note: This is a no-op if the Media Library "Local Media" plugin
+		(ml_local.dll) is not installed.
+		"""
 		self.__sendUserMessage(rating, IPC_SETRATING)
 		
 	def getListLength(self):
