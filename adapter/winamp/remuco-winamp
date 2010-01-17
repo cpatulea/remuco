@@ -49,6 +49,10 @@ class WinampAdapter(remuco.PlayerAdapter):
             "Winamp",
             playback_known=True,
             volume_known=True,
+            repeat_known=True,
+            shuffle_known=True,
+            progress_known=True,
+            max_rating=5,
             file_actions=FILE_ACTIONS,
             mime_types=["audio"]
         )
