@@ -87,6 +87,8 @@ IPC_GETRATING = 640
 # current playing title
 IPC_GET_PLAYING_TITLE = 3034
 
+IPC_REGISTER_WINAMP_IPCMESSAGE = 65536
+
 IPC_PE_DELETEINDEX = 104
 
 # runs an ml query
@@ -257,18 +259,28 @@ class Winamp(object):
 			else: # some other unexpected error
 				raise
 		
-		# use documented IPC call to get Playlist Editor window
-		self.__playlistHWND = self.__sendUserMessage(IPC_GETWND_PE, IPC_GETWND)
-		
-		# Media Library seems to be officially in-process only
-		self.__mediaLibraryHWND = win32gui.FindWindow("Winamp Gen", "Winamp Library")
-
+		# do this early because part of our initialization uses
+		# __copyDataToWinamp
 		_, pid = win32process.GetWindowThreadProcessId(self.__mainWindowHWND)
 
 		# open Winamp's process
 		self.__hProcess = windll.kernel32.OpenProcess(
 			win32con.PROCESS_VM_OPERATION | win32con.PROCESS_VM_READ | win32con.PROCESS_VM_WRITE,
 			False, pid)
+
+		# use documented IPC call to get Playlist Editor window
+		self.__playlistHWND = self.__sendUserMessage(IPC_GETWND_PE, IPC_GETWND)
+		
+		# unofficial way of getting Media Library window (undocumented but
+		# unlikely to change), see:
+		# http://forums.winamp.com/showthread.php?threadid=173940
+		ipcMessageAddr = self.__copyDataToWinamp("LibraryGetWnd")
+		self.IPC_LibraryGetWnd = self.__sendUserMessage(ipcMessageAddr,
+			IPC_REGISTER_WINAMP_IPCMESSAGE)
+		self.__freeDataInWinamp(ipcMessageAddr)
+		
+		self.__mediaLibraryHWND = self.__sendUserMessage(0,
+			self.IPC_LibraryGetWnd)
 
 	def detach(self):
 		"""Detaches from Winamp's process."""
