@@ -676,7 +676,7 @@ class Winamp(object):
 				handle, ML_IPC_TREEITEM_GETCHILD)
 
 			if not handle: # can also be found from MLTREEITEM.hasChildren
-				raise WinampError("Item %r has no children" % title)
+				return []
 		
 	def __getMediaLibrarySiblings(self, firstHandle):
 		items = []
