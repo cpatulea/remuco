@@ -31,6 +31,9 @@ TODO:
  - implement queue management (request_queue) using api_queue.h:
      http://stashbox.org/549052/api_queue.h
    (will most likely require us to be an in-process plugin)
+ - implement album art (find_image) using api_albumart.h
+     http://forums.winamp.com/showthread.php?postid=2593620#post2593620
+   (requires in-process)
 """
 
 import os.path
