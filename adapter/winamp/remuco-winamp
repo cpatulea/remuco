@@ -28,6 +28,9 @@ TODO:
  - ctrl_*() should only re-poll the values that have changed
  - run as a Winamp in-process plugin and get asynchronous notification of player
    state changes (IPC_CB_MISC)
+ - implement queue management (request_queue) using api_queue.h:
+     http://stashbox.org/549052/api_queue.h
+   (will most likely require us to be an in-process plugin)
 """
 
 import os.path
