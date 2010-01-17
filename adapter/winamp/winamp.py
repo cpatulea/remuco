@@ -31,6 +31,7 @@
 #     - More functions for controlling Winamp (seek, getExtendedFileInfo, ...)
 
 from ctypes import *
+from ctypes import wintypes
 import win32api, win32con, win32gui, win32process, pywintypes, winerror
 import os
 import random
@@ -131,6 +132,12 @@ BUTTON_COMMAND_NEXT = 40048
 
 # sort playlist by path and filename
 ID_PE_S_PATH = 40211
+
+ML_IPC_TREEITEM_GETCHILD = 0x121
+ML_IPC_TREEITEM_GETNEXT = 0x122
+ML_IPC_TREEITEM_GETINFO = 0x124
+ML_IPC_TREEITEM_GETROOT = 0x129
+MLTI_TEXT = 1
 
 """
 typedef struct tagCOPYDATASTRUCT {
@@ -247,6 +254,39 @@ class extendedFileInfoStruct(Structure):
 				("metadata", c_char_p),
 				("ret", c_char_p),
 				("retlen", c_size_t)]
+
+"""
+typedef struct {
+  size_t	size;			// size of this struct
+  UINT_PTR	id;				// depends on contxext
+  UINT_PTR	parentId;		// 0 = root, or ML_TREEVIEW_ID_*
+  char		*title;			// pointer to the buffer contained item name. 
+  size_t	titleLen;		// used for GetInfo 
+  BOOL		hasChildren;	// TRUE - has children
+  int		imageIndex;		// index of the associated image
+} MLTREEITEM;
+
+typedef struct {
+  MLTREEITEM	item;	// item data
+  UINT			mask;	// one or more of MLTI_* flags
+  UINT_PTR		handle; // Handle to the item. If handle is NULL item->id will be used
+} MLTREEITEMINFO;
+"""
+UINT_PTR = c_uint # FIXME?
+
+class MLTREEITEM(Structure):
+	_fields_ = [("size", c_size_t),
+				("id", UINT_PTR),
+				("parentId", UINT_PTR),
+				("title", c_char_p),
+				("titleLen", c_size_t),
+				("hasChildren", wintypes.BOOL),
+				("imageIndex", c_int)]
+
+class MLTREEITEMINFO(Structure):
+	_fields_ = [("item", MLTREEITEM),
+				("mask", c_uint),
+				("handle", UINT_PTR)]
 
 class Winamp(object):
 	def __init__(self):
@@ -609,6 +649,70 @@ class Winamp(object):
 	def removePlaylistPosition(self, position):
 		"""Removes the playlist item at the specified position."""
 		self.__sendUserMessage(IPC_PE_DELETEINDEX, position, self.__playlistHWND)
+
+	def getMediaLibraryChildren(self, path):
+		"""Get Media Library items under the specified path.
+		
+		The path is given as a list of components, ex:
+		  ["Local Media", "Never Played"]
+		
+		Returns a list of (title, handle) tuples.
+		"""
+		
+		handle = win32api.SendMessage(self.__mediaLibraryHWND, WM_ML_IPC,
+			0, ML_IPC_TREEITEM_GETROOT)
+		
+		while True:
+			siblings = self.__getMediaLibrarySiblings(handle)
+			
+			if not path:
+				return siblings
+
+			siblings = dict(siblings)
+			title = path.pop(0)
+			handle = siblings[title]
+			
+			handle = win32api.SendMessage(self.__mediaLibraryHWND, WM_ML_IPC,
+				handle, ML_IPC_TREEITEM_GETCHILD)
+
+			if not handle: # can also be found from MLTREEITEM.hasChildren
+				raise WinampError("Item %r has no children" % title)
+		
+	def __getMediaLibrarySiblings(self, firstHandle):
+		items = []
+		handle = firstHandle
+
+		while handle:
+			title = self.__getMediaLibraryTitleByHandle(handle)
+			items.append((title, handle))
+			
+			handle = win32api.SendMessage(self.__mediaLibraryHWND, WM_ML_IPC,
+				handle, ML_IPC_TREEITEM_GETNEXT)
+		
+		return items
+
+	def __getMediaLibraryTitleByHandle(self, handle):
+		info = MLTREEITEMINFO()
+		info.handle = handle
+		info.mask = MLTI_TEXT
+		info.item.size = sizeof(info.item)
+		info.item.titleLen = win32con.MAX_PATH - 1
+		titleAddr = self.__copyDataToWinamp("\x00" * win32con.MAX_PATH)
+		info.item.title = titleAddr
+		
+		infoAddr = self.__copyDataToWinamp(info)
+		rc = win32api.SendMessage(self.__mediaLibraryHWND, WM_ML_IPC,
+			infoAddr, ML_IPC_TREEITEM_GETINFO)
+		if rc == 1:
+			title = self.__readDataFromWinamp(titleAddr, c_char_p)
+
+		self.__freeDataInWinamp(titleAddr)
+		self.__freeDataInWinamp(infoAddr)
+		
+		if rc == 1:
+			return title.value
+		else:
+			raise WinampError("ML_IPC_TREEITEM_GETINFO returned %d" % rc)
 
 	def next(self):
 		"""Sets playlist marker to next song."""
