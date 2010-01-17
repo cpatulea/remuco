@@ -34,6 +34,7 @@ TODO:
 """
 
 import os.path
+import urllib
 import remuco
 from remuco import log
 import winamp
@@ -53,6 +54,8 @@ IA_APPEND = remuco.ItemAction("Enqueue", multiple=True)
 IA_PLAY = remuco.ItemAction("Play now", multiple=True)
 MLIB_ITEM_ACTIONS = (IA_APPEND, IA_PLAY)
 
+SEARCH_MASK = ["Artist", "Title", "Album", "Genre", "Year"]
+
 class WinampAdapter(remuco.PlayerAdapter):
     def __init__(self):
         super(WinampAdapter, self).__init__(
@@ -64,7 +67,8 @@ class WinampAdapter(remuco.PlayerAdapter):
             progress_known=True,
             max_rating=5,
             file_actions=FILE_ACTIONS,
-            mime_types=["audio"]
+            mime_types=["audio"],
+            search_mask=SEARCH_MASK
         )
 
     def start(self):
@@ -239,6 +243,27 @@ class WinampAdapter(remuco.PlayerAdapter):
                 raise ValueError("Invalid action LA_LOAD for path %r" % path)
         else:
             raise ValueError("Unknown mlib list action %d" % action_id)
+
+    def request_search(self, reply, query):
+        queryString = " & ".join('%s has "%s"' % (mask, urllib.quote(value))
+            for mask, value in zip(SEARCH_MASK, query) if value
+        )
+        items = self.winamp.query(queryString)
+        
+        self._lastSearchFilenames = []
+        for item in items:
+            reply.names.append(item.artist + " - " + item.title)
+            self._lastSearchFilenames.append(item.filename)
+        reply.ids = range(len(reply.names))
+        reply.item_actions = FILE_ACTIONS
+        reply.send()
+
+    def action_search_item(self, action_id, positions, ids):
+        if not hasattr(self, "_lastSearchFilenames"):
+            raise ValueError("request_search has not been called")
+
+        files = map(self._lastSearchFilenames.__getitem__, map(int, ids))
+        return self.action_files(action_id, files, files)
 
 # =============================================================================
 # main (example startup using remuco.Manager)
