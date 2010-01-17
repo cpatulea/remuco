@@ -33,6 +33,7 @@
 from ctypes import *
 from ctypes import wintypes
 import win32api, win32con, win32gui, win32process, pywintypes, winerror
+import codecs
 import os
 import random
 import time
@@ -287,6 +288,28 @@ class MLTREEITEMINFO(Structure):
 	_fields_ = [("item", MLTREEITEM),
 				("mask", c_uint),
 				("handle", UINT_PTR)]
+
+"""
+typedef struct
+{
+	// you fill this in
+	size_t size; // size of this struct
+	size_t playlistNum; // number of the playlist you want to retrieve (0 index)
+	// ml_playlists fills these in
+	wchar_t playlistName[128];
+	wchar_t filename[MAX_PATH];
+	int numItems;
+	int length; // in seconds
+} mlPlaylistInfo;
+"""
+class mlPlaylistInfo(Structure):
+	_fields_ = [("size", c_size_t),
+				("playlistNum", c_size_t),
+				("playlistName", c_wchar * 128),
+				("filename", c_wchar * win32con.MAX_PATH),
+				("numItems", c_int),
+				("length", c_int)]
+
 
 class Winamp(object):
 	def __init__(self):
@@ -715,6 +738,62 @@ class Winamp(object):
 			return title.value
 		else:
 			raise WinampError("ML_IPC_TREEITEM_GETINFO returned %d" % rc)
+
+	def getMediaLibraryPlaylistTitles(self):
+		return [title for title, filename in self.__getMediaLibraryPlaylists()]
+
+	def __getMediaLibraryPlaylists(self):
+		ML_IPC_PLAYLIST_COUNT = 0x182
+		ML_IPC_PLAYLIST_INFO = 0x183
+		
+		count = win32api.SendMessage(self.__mediaLibraryHWND, WM_ML_IPC,
+			0, ML_IPC_PLAYLIST_COUNT)
+		
+		info = mlPlaylistInfo()
+		info.size = sizeof(info)
+
+		rc = 1
+		playlists = []
+		for playlistNum in range(count):
+			info.playlistNum = playlistNum
+			infoAddr = self.__copyDataToWinamp(info)
+			
+			rc = win32api.SendMessage(self.__mediaLibraryHWND, WM_ML_IPC,
+				infoAddr, ML_IPC_PLAYLIST_INFO)
+			if rc != 1:
+				break
+
+			info = self.__readDataFromWinamp(infoAddr, mlPlaylistInfo)
+			
+			playlists.append((info.playlistName, info.filename))
+		self.__freeDataInWinamp(infoAddr)
+
+		if rc == 1:
+			return playlists
+		else:
+			raise WinampError("ML_IPC_PLAYLIST_INFO returned %d" % rc)
+
+	def getMediaLibraryPlaylist(self, title):
+		playlists = self.__getMediaLibraryPlaylists()
+		playlists = dict(playlists)
+		return playlists[title]
+
+	def getMediaLibraryPlaylistFilenames(self, title):
+		return self.__grokM3U(self.getMediaLibraryPlaylist(title))
+
+	def __grokM3U(self, filename):
+		if filename.lower().endswith(".m3u8"):
+			encoding = "utf-8-sig"
+		else:
+			encoding = None
+
+		tracks = []
+		for line in codecs.open(filename, "r", encoding=encoding):
+			line = line.strip()
+			if not line or line.startswith("#"):
+				continue
+			tracks.append(line)
+		return tracks
 
 	def next(self):
 		"""Sets playlist marker to next song."""

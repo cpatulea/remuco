@@ -46,6 +46,13 @@ FA_APPEND = remuco.ItemAction("Append")
 FA_PLAY = remuco.ItemAction("Play")
 FILE_ACTIONS = (FA_APPEND, FA_PLAY)
 
+LA_LOAD = remuco.ListAction("Load")
+MLIB_LIST_ACTIONS = (LA_LOAD,)
+
+IA_APPEND = remuco.ItemAction("Enqueue", multiple=True)
+IA_PLAY = remuco.ItemAction("Play now", multiple=True)
+MLIB_ITEM_ACTIONS = (IA_APPEND, IA_PLAY)
+
 class WinampAdapter(remuco.PlayerAdapter):
     def __init__(self):
         super(WinampAdapter, self).__init__(
@@ -186,6 +193,52 @@ class WinampAdapter(remuco.PlayerAdapter):
             self.winamp.play()
         else:
             raise ValueError("Unknown file action %r" % action_id)
+
+    def request_mlib(self, reply, path):
+        if path == []:
+            children = self.winamp.getMediaLibraryChildren(path)
+            reply.nested = [title for title, handle in children]
+        elif path == ["Playlists"]:
+            reply.nested = self.winamp.getMediaLibraryPlaylistTitles()
+            reply.list_actions = MLIB_LIST_ACTIONS
+        elif len(path) == 2 and path[0] == "Playlists":
+            filenames = self.winamp.getMediaLibraryPlaylistFilenames(path[1])
+            # could use getExtendedFileInfo but that might spin the disk a lot
+            # if the metadata aren't already cached
+            reply.names = [
+                os.path.splitext(os.path.basename(f))[0] for f in filenames
+            ]
+            reply.ids = range(len(reply.names))
+            reply.item_actions = MLIB_ITEM_ACTIONS
+
+        reply.send()
+
+    def action_mlib_item(self, action_id, path, positions, ids):
+        if action_id in (IA_APPEND.id, IA_PLAY.id):
+            if len(path) == 2 and path[0] == "Playlists":
+                filenames = self.winamp.getMediaLibraryPlaylistFilenames(path[1])
+                if action_id == IA_PLAY.id:
+                    self.winamp.clearPlaylist()
+                for filename in map(filenames.__getitem__, map(int, ids)):
+                    self.winamp.enqueueFile(filename)
+                if action_id == IA_PLAY.id:
+                    self.winamp.play()
+            else:
+                raise ValueError("Invalid action for path %r" % path)
+        else:
+            raise ValueError("Unknown mlib item action %d" % action_id)
+
+    def action_mlib_list(self, action_id, path):
+        if action_id == LA_LOAD.id:
+            if len(path) == 2 and path[0] == "Playlists":
+                playlist = self.winamp.getMediaLibraryPlaylist(path[1])
+                self.winamp.clearPlaylist()
+                self.winamp.enqueueFile(playlist)
+                self.winamp.play()
+            else:
+                raise ValueError("Invalid action LA_LOAD for path %r" % path)
+        else:
+            raise ValueError("Unknown mlib list action %d" % action_id)
 
 # =============================================================================
 # main (example startup using remuco.Manager)
