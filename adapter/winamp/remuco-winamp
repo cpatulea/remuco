@@ -46,8 +46,8 @@ IA_JUMP = remuco.ItemAction("Jump to")
 IA_REMOVE = remuco.ItemAction("Remove", multiple=True)
 PLAYLIST_ACTIONS = (IA_JUMP, IA_REMOVE)
 
-FA_APPEND = remuco.ItemAction("Append")
-FA_PLAY = remuco.ItemAction("Play")
+FA_APPEND = remuco.ItemAction("Append", multiple=True)
+FA_PLAY = remuco.ItemAction("Play", multiple=True)
 FILE_ACTIONS = (FA_APPEND, FA_PLAY)
 
 LA_LOAD = remuco.ListAction("Load")
@@ -192,10 +192,12 @@ class WinampAdapter(remuco.PlayerAdapter):
 
     def action_files(self, action_id, files, uris):
         if action_id == FA_APPEND.id:
-            self.winamp.enqueueFile(files[0])
+            for file in files:
+                self.winamp.enqueueFile(file)
         elif action_id == FA_PLAY.id:
             self.winamp.clearPlaylist()
-            self.winamp.enqueueFile(files[0])
+            for file in files:
+                self.winamp.enqueueFile(file)
             self.winamp.setPlaylistPosition(0)
             self.winamp.play()
         else:
