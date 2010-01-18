@@ -1,5 +1,6 @@
 #!/usr/bin/python
 import os
+from win32com.shell import shell, shellcon
 
-xdg_config_home = os.path.join(os.getenv("USERPROFILE"), "Application Data")
-xdg_cache_home = os.path.join(os.getenv("USERPROFILE"), "Local Settings", "Application Data")
+xdg_config_home = shell.SHGetFolderPath(0, shellcon.CSIDL_APPDATA, 0, 0)
+xdg_cache_home = shell.SHGetFolderPath(0, shellcon.CSIDL_LOCAL_APPDATA, 0, 0)
