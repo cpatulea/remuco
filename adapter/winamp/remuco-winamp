@@ -34,6 +34,7 @@ TODO:
  - implement album art (find_image) using api_albumart.h
      http://forums.winamp.com/showthread.php?postid=2593620#post2593620
    (requires in-process)
+ - implement Media Library smart views
 """
 
 import os.path
