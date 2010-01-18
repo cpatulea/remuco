@@ -219,6 +219,11 @@ class WinampAdapter(remuco.PlayerAdapter):
             ]
             reply.ids = range(len(reply.names))
             reply.item_actions = MLIB_ITEM_ACTIONS
+        elif path == ["Bookmarks"]:
+            bookmarks = self.winamp.getBookmarks()
+            reply.names = [title for title, path in self.winamp.getBookmarks()]
+            reply.ids = range(len(bookmarks))
+            reply.item_actions = MLIB_ITEM_ACTIONS
 
         reply.send()
 
@@ -232,6 +237,14 @@ class WinampAdapter(remuco.PlayerAdapter):
                     self.winamp.enqueueFile(filename)
                 if action_id == IA_PLAY.id:
                     self.winamp.play()
+            elif path == ["Bookmarks"]:
+                bookmarks = self.winamp.getBookmarks()
+                if action_id == IA_PLAY.id:
+                    self.winamp.clearPlaylist()
+                for title, filename in map(bookmarks.__getitem__, map(int, ids)):
+                    self.winamp.enqueueFile(filename)
+                if action_id == IA_PLAY.id:
+                    seld.winamp.play()
             else:
                 raise ValueError("Invalid action for path %r" % path)
         else:

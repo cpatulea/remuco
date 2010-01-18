@@ -33,6 +33,7 @@
 from ctypes import *
 from ctypes import wintypes
 import win32api, win32con, win32gui, win32process, pywintypes, winerror
+from win32com.shell import shell, shellcon
 import codecs
 import os
 import random
@@ -348,6 +349,25 @@ class Winamp(object):
 	def detach(self):
 		"""Detaches from Winamp's process."""
 		windll.kernel32.CloseHandle(self.__hProcess)
+
+	def _appdata_file(self, *args):
+		return os.path.join(
+			shell.SHGetFolderPath(0, shellcon.CSIDL_APPDATA, 0, 0),
+			"Winamp",
+			*args
+		)
+
+	def getBookmarks(self):
+		fp = codecs.open(self._appdata_file("Winamp.bm"), "r",
+						 encoding="iso-8859-1")
+		bookmarks = []
+		while True:
+			path = fp.readline().strip()
+			if not path:
+				break
+			title = fp.readline().strip()
+			bookmarks.append((title, path))
+		return bookmarks
 
 	def __readStringFromMemory(self, address, isUnicode = False):
 		"""Reads a string from Winamp's memory address space."""
