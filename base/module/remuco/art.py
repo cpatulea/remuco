@@ -27,10 +27,11 @@ import os.path
 import re
 import urllib
 import urlparse
+import windows
 
 from remuco import log
 
-TN_DIR = os.path.join(os.getenv("USERPROFILE"), ".thumbnails")
+TN_DIR = os.path.join(windows.xdg_cache_home, ".thumbnails")
 TN_SUBDIRS = ("large", "normal")
 
 RE_IND = r'(?:front|album|cover|folder|art)' # words indicating art files
