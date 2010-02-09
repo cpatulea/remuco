@@ -31,7 +31,7 @@ import windows
 
 from remuco import log
 
-TN_DIR = os.path.join(windows.xdg_cache_home, ".thumbnails")
+TN_DIR = None
 TN_SUBDIRS = ("large", "normal")
 
 RE_IND = r'(?:front|album|cover|folder|art)' # words indicating art files
@@ -107,7 +107,7 @@ def __get_art_from_thumbnails(uri):
         thumbnail for that URI
         
     """
-    if not os.path.isdir(TN_DIR):
+    if not TN_DIR or not os.path.isdir(TN_DIR):
         return None
     
     log.debug("looking for art image in %s" % TN_DIR)
